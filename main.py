@@ -1,7 +1,6 @@
 import telebot
 from flask import Flask, request
 import os
-import requests
 
 # ✅ احصل على التوكن من متغيرات البيئة
 TOKEN = os.getenv("BOT_TOKEN")  # ضع التوكن في GitHub Secrets أو Railway Variables
@@ -10,13 +9,24 @@ WEBHOOK_URL = os.getenv("WEBHOOK_URL")  # ضع رابط Railway في GitHub Secr
 bot = telebot.TeleBot(TOKEN)
 app = Flask(__name__)
 
-# ✅ تعريف نقطة استقبال Webhook
+# ✅ نقطة الفحص الأساسية للتأكد من أن التطبيق يعمل
+@app.route("/")
+def index():
+    return "✅ البوت يعمل بنجاح 🚀"
+
+# ✅ نقطة استقبال Webhook
 @app.route(f"/{TOKEN}", methods=["POST"])
 def webhook():
     json_str = request.get_data().decode("UTF-8")
     update = telebot.types.Update.de_json(json_str)
     bot.process_new_updates([update])
     return "OK", 200
+
+# ✅ تعيين Webhook عند تشغيل التطبيق
+@app.before_first_request
+def set_webhook():
+    bot.remove_webhook()
+    bot.set_webhook(url=f"{WEBHOOK_URL}/{TOKEN}")
 
 # ✅ أمر /start
 @bot.message_handler(commands=["start"])
