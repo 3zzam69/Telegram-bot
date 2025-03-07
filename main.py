@@ -1,25 +1,27 @@
 import os
-from flask import Flask
+from flask import Flask, request
 
-# جلب المتغيرات من البيئة
+# جلب التوكن والرابط من متغيرات البيئة
 TOKEN = os.getenv("BOT_TOKEN")
 WEBHOOK_URL = os.getenv("WEBHOOK_URL")
 
-# التحقق من وجود القيم
 if not TOKEN:
     raise ValueError("🚨 خطأ: متغير البيئة BOT_TOKEN غير مضبوط!")
 if not WEBHOOK_URL:
     raise ValueError("🚨 خطأ: متغير البيئة WEBHOOK_URL غير مضبوط!")
 
-print(f"✅ BOT_TOKEN مضبوط: {TOKEN[:10]}...")  # طباعة أول 10 أحرف فقط للتحقق
-print(f"✅ WEBHOOK_URL مضبوط: {WEBHOOK_URL}")
-
-# إنشاء تطبيق Flask
 app = Flask(__name__)
 
-@app.route("/")
+@app.route("/", methods=["GET"])
 def home():
-    return "✅ البوت يعمل بنجاح!"
+    return "✅ البوت يعمل بنجاح!", 200
+
+@app.route("/", methods=["POST"])
+def webhook():
+    update = request.json
+    print(f"📩 تحديث جديد من تيليجرام: {update}")  
+    return "OK", 200
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=8080)
+    port = int(os.environ.get("PORT", 8080))
+    app.run(host="0.0.0.0", port=port)
