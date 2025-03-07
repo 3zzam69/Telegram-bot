@@ -1,39 +1,38 @@
-import os
 import telebot
 from flask import Flask, request
+import os
+import requests
 
-# تعريف متغيرات البيئة
-TOKEN = "7809990459:AAHnk6DHKeox2iyLA9mOKge4d02rW7O67n8"  # ضع توكن البوت الخاص بك هنا
-WEBHOOK_URL = "https://web-production-9475.up.railway.app"  # رابط Railway الخاص بك
+# ✅ احصل على التوكن من متغيرات البيئة
+TOKEN = os.getenv("BOT_TOKEN")  # ضع التوكن في GitHub Secrets أو Railway Variables
+WEBHOOK_URL = os.getenv("WEBHOOK_URL")  # ضع رابط Railway في GitHub Secrets
 
-# إنشاء كائن البوت
 bot = telebot.TeleBot(TOKEN)
-
-# إنشاء تطبيق Flask
 app = Flask(__name__)
 
-@app.route("/", methods=["GET"])
-def home():
-    return "بوت تيليجرام يعمل بنجاح 🚀"
-
+# ✅ تعريف نقطة استقبال Webhook
 @app.route(f"/{TOKEN}", methods=["POST"])
 def webhook():
-    """ استقبال الطلبات من تيليجرام """
-    json_str = request.get_data().decode("utf-8")
+    json_str = request.get_data().decode("UTF-8")
     update = telebot.types.Update.de_json(json_str)
     bot.process_new_updates([update])
     return "OK", 200
 
-@bot.message_handler(commands=['start'])
-def send_welcome(message):
-    bot.reply_to(message, "مرحبًا! أنا بوت تيليجرام يعمل عبر Railway 🚀")
+# ✅ أمر /start
+@bot.message_handler(commands=["start"])
+def start(message):
+    bot.send_message(message.chat.id, "🚀 أهلاً بك! البوت يعمل بنجاح.")
 
-# تشغيل Webhook عند بدء التطبيق
-def set_webhook():
-    bot.remove_webhook()
-    bot.set_webhook(url=f"{WEBHOOK_URL}/{TOKEN}")
+# ✅ أمر /help
+@bot.message_handler(commands=["help"])
+def help_command(message):
+    bot.send_message(message.chat.id, "❓ استخدم الأوامر المتاحة للتفاعل مع البوت.")
 
+# ✅ استجابة لأي رسالة نصية
+@bot.message_handler(func=lambda message: True)
+def echo_message(message):
+    bot.send_message(message.chat.id, f"📩 لقد قلت: {message.text}")
+
+# ✅ تشغيل التطبيق على Railway
 if __name__ == "__main__":
-    set_webhook()
-    port = int(os.environ.get("PORT", 5000))  # استخدام PORT من بيئة Railway
-    app.run(host="0.0.0.0", port=port)
+    app.run(host="0.0.0.0", port=8080)
