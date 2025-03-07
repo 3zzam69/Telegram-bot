@@ -10,13 +10,11 @@ user_data = {}
 @bot.message_handler(commands=['start'])
 def start(message):
     user_id = message.chat.id
-
-    # إذا كان المستخدم بدأ التسجيل سابقًا، لا نطلب منه البيانات مرة أخرى
     if user_id in user_data and user_data[user_id]['step'] >= 6:
         bot.send_message(user_id, "أنت مسجل بالفعل! يمكنك الآن إرسال حلمك وسأساعدك في تفسيره.")
         return
 
-    user_data[user_id] = {'step': 1}  # بدء جمع البيانات
+    user_data[user_id] = {'step': 1}
     bot.send_message(user_id, "أهلاً بك! لنبدأ بجمع بعض المعلومات عنك. ما اسمك الثلاثي؟")
 
 @bot.message_handler(func=lambda message: message.chat.id in user_data)
@@ -25,34 +23,47 @@ def handle_message(message):
     text = message.text.strip()
 
     if user_id not in user_data:
-        return  # تجاهل المستخدمين غير المسجلين
+        return
 
     step = user_data[user_id]['step']
 
-    if step == 1:  # الاسم الثلاثي
-        user_data[user_id]['name'] = text
-        bot.send_message(user_id, "كم عمرك؟")
-        user_data[user_id]['step'] = 2
+    if step == 1:  # التحقق من الاسم
+        if is_valid_name(text):
+            user_data[user_id]['name'] = text
+            bot.send_message(user_id, "كم عمرك؟")
+            user_data[user_id]['step'] = 2
+        else:
+            bot.send_message(user_id, "⚠️ الرجاء إدخال اسمك الثلاثي بشكل صحيح دون أرقام أو رموز.")
 
-    elif step == 2:  # العمر
-        if text.isdigit():
+    elif step == 2:  # التحقق من العمر
+        if text.isdigit() and 10 <= int(text) <= 120:
             user_data[user_id]['age'] = int(text)
             send_marital_status_options(user_id)  # عرض أزرار الحالة الاجتماعية
             user_data[user_id]['step'] = 3
         else:
-            bot.send_message(user_id, "الرجاء إدخال عمرك بالأرقام فقط.")
+            bot.send_message(user_id, "⚠️ الرجاء إدخال عمرك الصحيح (بين 10 و 120 سنة).")
 
-    elif step == 4:  # عدد أفراد الأسرة
-        if text.isdigit():
+    elif step == 4:  # التحقق من عدد أفراد الأسرة
+        if text.isdigit() and 1 <= int(text) <= 50:
             user_data[user_id]['family_members'] = int(text)
             send_religious_level_options(user_id)  # عرض أزرار الالتزام الديني
             user_data[user_id]['step'] = 5
         else:
-            bot.send_message(user_id, "الرجاء إدخال عدد أفراد الأسرة بالأرقام فقط.")
+            bot.send_message(user_id, "⚠️ الرجاء إدخال عدد أفراد الأسرة الصحيح (بين 1 و 50).")
 
     elif step == 6:  # استقبال الحلم
         user_data[user_id]['dream'] = text
-        analyze_dream(user_id)  # تحليل الحلم بناءً على المعلومات الشخصية
+        analyze_dream(user_id)
+
+# التحقق من صحة الاسم الثلاثي
+def is_valid_name(name):
+    words = name.split()
+    if len(words) < 3:
+        return False
+    for word in words:
+        if not word.isalpha() or not word.isascii():
+            return False
+    return True
 
 # إرسال أزرار اختيار الحالة الاجتماعية
 def send_marital_status_options(user_id):
@@ -84,15 +95,20 @@ def handle_callback(call):
     data = call.data
 
     if data.startswith("marital_"):  # حالة اجتماعية
-        user_data[user_id]['marital_status'] = data.split("_")[1]
+        choice = data.split("_")[1]
+        user_data[user_id]['marital_status'] = choice
+        bot.edit_message_text(chat_id=user_id, message_id=call.message.message_id, text=f"💍 حالتك الاجتماعية: {choice}")
         bot.send_message(user_id, "كم عدد أفراد أسرتك؟")
         user_data[user_id]['step'] = 4
 
     elif data.startswith("religious_"):  # الالتزام الديني
-        user_data[user_id]['religious_level'] = data.split("_")[1]
+        choice = data.split("_")[1]
+        user_data[user_id]['religious_level'] = choice
+        bot.edit_message_text(chat_id=user_id, message_id=call.message.message_id, text=f"🕌 مستوى التزامك الديني: {choice}")
         bot.send_message(user_id, "شكراً لك! الآن يمكنك إرسال حلمك وسأساعدك في تفسيره.")
-        user_data[user_id]['step'] = 6  # جاهز لتلقي الأحلام
+        user_data[user_id]['step'] = 6
 
+# تحليل الحلم وعرض البيانات
 def analyze_dream(user_id):
     user = user_data[user_id]
     response = f"🔍 تحليل حلمك بناءً على بياناتك:\n"
