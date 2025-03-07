@@ -1,27 +1,25 @@
+from telegram import Update
+from telegram.ext import Application, CommandHandler, ContextTypes
 import os
-from flask import Flask, request
 
-# جلب التوكن والرابط من متغيرات البيئة
-TOKEN = os.getenv("BOT_TOKEN")
-WEBHOOK_URL = os.getenv("WEBHOOK_URL")
+TOKEN = os.environ.get("7809990459:AAHnk6DHKeox2iyLA9mOKge4d02rW7O67n8")  # سيتم أخذ التوكن من إعدادات Railway
 
-if not TOKEN:
-    raise ValueError("🚨 خطأ: متغير البيئة BOT_TOKEN غير مضبوط!")
-if not WEBHOOK_URL:
-    raise ValueError("🚨 خطأ: متغير البيئة WEBHOOK_URL غير مضبوط!")
+# ─── وظيفة رد على أمر /start ──────────────────
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text("مرحبًا! أنا بوت يعمل على Railway 🚂")
 
-app = Flask(__name__)
-
-@app.route("/", methods=["GET"])
-def home():
-    return "✅ البوت يعمل بنجاح!", 200
-
-@app.route("/", methods=["POST"])
-def webhook():
-    update = request.json
-    print(f"📩 تحديث جديد من تيليجرام: {update}")  
-    return "OK", 200
-
+# ─── تشغيل البوت ──────────────────────────────
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 8080))
-    app.run(host="0.0.0.0", port=port)
+    app = Application.builder().token(TOKEN).build()
+    app.add_handler(CommandHandler("start", start))
+    
+    # الطريقة 1: Long Polling (للتجربة السريعة)
+    app.run_polling()
+    
+    # الطريقة 2: Webhook (للإنتاج)
+    # app.run_webhook(
+    #     listen="0.0.0.0",
+    #     port=int(os.environ.get("PORT", 8443)),
+    #     url_path=TOKEN,
+    #     webhook_url=f"https://YOUR_RAILWAY_URL.up.railway.app/{TOKEN}"
+    # )
