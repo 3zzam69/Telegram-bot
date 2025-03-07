@@ -3,7 +3,7 @@ import telebot
 from flask import Flask, request
 
 # تعريف متغيرات البيئة
-TOKEN = "79ab4694-7487-48b1-9a09-29bf8c162d7b"  # ضع توكن البوت الخاص بك هنا
+TOKEN = "7809990459:AAHnk6DHKeox2iyLA9mOKge4d02rW7O67n8"  # ضع توكن البوت الخاص بك هنا
 WEBHOOK_URL = "https://web-production-9475.up.railway.app"  # رابط Railway الخاص بك
 
 # إنشاء كائن البوت
