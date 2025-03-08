@@ -90,7 +90,7 @@ def main():
         states={
             SELECT_MONTH: [CallbackQueryHandler(handle_month)],
             SELECT_YEAR: [
-                CallbackQueryHandler(handle_year, pattern="^\d+$"),
+                CallbackQueryHandler(handle_year, pattern=r"^\d+$"),
                 CallbackQueryHandler(navigate_years, pattern="^(prev_years|next_years)$"),
             ],
         },
