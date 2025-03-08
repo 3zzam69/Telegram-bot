@@ -1,2 +1,1 @@
-
-web: python main.py     # إذا استخدمت Webhook
+worker: python main.py
