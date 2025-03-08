@@ -1,2 +1,1 @@
-peyton -telegram-bot==20.3
-python-dotenv==1.0.0
+python-telegram-bot==21.0.1
