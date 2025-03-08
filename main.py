@@ -34,7 +34,7 @@ async def handle_name(update: Update, context: CallbackContext) -> int:
 
     if re.match(r'^[\u0600-\u06FF\s]+$', name) and len(name.split()) == 3 and all(len(part) > 1 for part in name.split()):
         context.user_data['name'] = name
-        keyboard = [[InlineKeyboardButton(str(i), callback_data=str(i))] for i in range(1, 32)]
+        keyboard = [[InlineKeyboardButton(str(i), callback_data=str(i)) for i in range(j, j+6)] for j in range(1, 31, 6)]
         reply_markup = InlineKeyboardMarkup(keyboard)
         await update.message.reply_text('اختر يوم ميلادك:', reply_markup=reply_markup)
         return ASK_DAY
@@ -47,7 +47,8 @@ async def handle_day(update: Update, context: CallbackContext) -> int:
     await query.answer()
     context.user_data['day'] = query.data
 
-    keyboard = [[InlineKeyboardButton(str(i), callback_data=str(i))] for i in range(1, 13)]
+    keyboard = [[InlineKeyboardButton(str(i), callback_data=str(i)) for i in range(1, 7)],
+                [InlineKeyboardButton(str(i), callback_data=str(i)) for i in range(7, 13)]]
     await query.edit_message_text('اختر شهر ميلادك:', reply_markup=InlineKeyboardMarkup(keyboard))
     return ASK_MONTH
 
@@ -56,14 +57,31 @@ async def handle_month(update: Update, context: CallbackContext) -> int:
     await query.answer()
     context.user_data['month'] = query.data
 
-    years = list(range(datetime.now().year - 100, datetime.now().year - 5))
-    keyboard = [[InlineKeyboardButton(str(year), callback_data=str(year))] for year in years]
+    context.user_data['year_page'] = datetime.now().year - 5  # آخر 5 سنوات
+    return await show_year_selection(query)
+
+async def show_year_selection(query):
+    year_page = query.message.chat.id
+    current_year = datetime.now().year
+    years = [context.user_data['year_page'] - i for i in range(5)]
+    
+    keyboard = [[InlineKeyboardButton(str(year), callback_data=str(year)) for year in years],
+                [InlineKeyboardButton("⬅️ السابق", callback_data="prev_year"), InlineKeyboardButton("التالي ➡️", callback_data="next_year")]]
+    
     await query.edit_message_text('اختر سنة ميلادك:', reply_markup=InlineKeyboardMarkup(keyboard))
     return ASK_YEAR
 
 async def handle_year(update: Update, context: CallbackContext) -> int:
     query = update.callback_query
     await query.answer()
+
+    if query.data == "next_year":
+        context.user_data['year_page'] -= 5
+        return await show_year_selection(query)
+    elif query.data == "prev_year":
+        context.user_data['year_page'] += 5
+        return await show_year_selection(query)
+
     context.user_data['year'] = query.data
 
     dob = f"{context.user_data['year']}-{context.user_data['month']}-{context.user_data['day']}"
@@ -97,9 +115,10 @@ async def confirm_dob(update: Update, context: CallbackContext) -> int:
         return await restart_dob_selection(query)
 
 async def restart_dob_selection(query):
-    keyboard = [[InlineKeyboardButton(str(i), callback_data=str(i))] for i in range(1, 32)]
-    await query.edit_message_text('اختر يوم ميلادك مرة أخرى:', reply_markup=InlineKeyboardMarkup(keyboard))
-    return ASK_DAY
+    keyboard = [[InlineKeyboardButton(str(i), callback_data=str(i)) for i in range(1, 7)],
+                [InlineKeyboardButton(str(i), callback_data=str(i)) for i in range(7, 13)]]
+    await query.edit_message_text('اختر شهر ميلادك مرة أخرى:', reply_markup=InlineKeyboardMarkup(keyboard))
+    return ASK_MONTH
 
 def save_user_data():
     with open('user_data.json', 'w') as file:
